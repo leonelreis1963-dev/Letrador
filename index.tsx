@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI } from '@google/genai';
 
@@ -20,6 +20,10 @@ const App: React.FC = () => {
   const [initialState, setInitialState] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [view, setView] = useState<'search' | 'favorites'>('search');
+  
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(3); // Default speed
+  const lyricsContainerRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     try {
@@ -40,6 +44,29 @@ const App: React.FC = () => {
     }
   }, [favorites]);
 
+  useEffect(() => {
+    let scrollInterval: number | undefined;
+
+    if (isScrolling && lyricsContainerRef.current) {
+      scrollInterval = window.setInterval(() => {
+        if (lyricsContainerRef.current) {
+          const el = lyricsContainerRef.current;
+          if (el.scrollTop < el.scrollHeight - el.clientHeight) {
+            el.scrollTop += 1;
+          } else {
+            setIsScrolling(false); // Stop at the end
+          }
+        }
+      }, 150 - scrollSpeed * 12); // Adjust timing based on speed
+    }
+
+    return () => {
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+      }
+    };
+  }, [isScrolling, scrollSpeed]);
+
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!searchTerm.trim()) {
@@ -47,6 +74,11 @@ const App: React.FC = () => {
       return;
     }
 
+    setIsScrolling(false);
+    if(lyricsContainerRef.current) {
+        lyricsContainerRef.current.scrollTop = 0;
+    }
+    
     setIsLoading(true);
     setError('');
     setLyrics('');
@@ -54,22 +86,22 @@ const App: React.FC = () => {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-      const prompt = `Encontre e exiba a letra completa da música: "${searchTerm}". Responda apenas com a letra da música. Se a música não for encontrada, responda apenas com "Letra não encontrada."`;
+      const prompt = `Qual é a letra completa da música "${searchTerm}"? Retorne apenas a letra. Se não conseguir encontrar a letra, retorne a frase "LETRA_NAO_ENCONTRADA".`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
-          tools: [{ googleSearch: {} }],
+          tools: [{googleSearch: {}}],
         },
       });
+      
+      const generatedLyrics = response.text.trim();
 
-      const resultText = response.text;
-
-      if (resultText.trim() === 'Letra não encontrada.') {
+      if (!generatedLyrics || generatedLyrics === 'LETRA_NAO_ENCONTRADA') {
         setError(`Não foi possível encontrar a letra para "${searchTerm}". Por favor, verifique o nome da música e do artista e tente novamente.`);
       } else {
-        setLyrics(resultText);
+        setLyrics(generatedLyrics);
       }
     } catch (err) {
       console.error(err);
@@ -99,14 +131,24 @@ const App: React.FC = () => {
     setLyrics(favorite.lyrics);
     setError('');
     setInitialState(false);
+    setIsScrolling(false);
+    if(lyricsContainerRef.current) {
+        lyricsContainerRef.current.scrollTop = 0;
+    }
     setView('search');
   };
+
+  const toggleScroll = () => {
+    if (!lyrics) return;
+    setIsScrolling(!isScrolling);
+  };
+  
 
   return (
     <div className="app-container">
       <header>
-        <h1>Buscador de Letras</h1>
-        <p>Encontre e salve as letras das suas músicas favoritas</p>
+        <h1>LETRADOR</h1>
+        <p>Encontre, ouça e salve as letras das suas músicas favoritas</p>
         <nav className="navigation">
           <button onClick={() => setView('search')} disabled={view === 'search'}>
             Pesquisar
@@ -143,11 +185,28 @@ const App: React.FC = () => {
                 <div className="lyrics-display">
                   <div className="lyrics-header">
                      <h2>{searchTerm}</h2>
-                     <button onClick={toggleFavorite} className={`favorite-button ${isFavorite(searchTerm) ? 'favorited' : ''}`} aria-label="Adicionar aos favoritos">
-                        {isFavorite(searchTerm) ? '★ Favorito' : '☆ Adicionar aos Favoritos'}
-                     </button>
+                     <div className="controls-wrapper">
+                        <div className="karaoke-controls">
+                           <button onClick={toggleScroll} className="play-pause-button" aria-label={isScrolling ? "Pausar rolagem" : "Iniciar rolagem"}>
+                             {isScrolling ? '⏸' : '▶'}
+                           </button>
+                           <label htmlFor="speed-slider">Velocidade</label>
+                           <input
+                             type="range"
+                             id="speed-slider"
+                             min="1"
+                             max="10"
+                             value={scrollSpeed}
+                             onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                             aria-label="Ajustar velocidade da rolagem"
+                           />
+                        </div>
+                        <button onClick={toggleFavorite} className={`favorite-button ${isFavorite(searchTerm) ? 'favorited' : ''}`} aria-label="Adicionar aos favoritos">
+                           {isFavorite(searchTerm) ? '★ Favorito' : '☆ Adicionar aos Favoritos'}
+                        </button>
+                     </div>
                   </div>
-                  <pre>{lyrics}</pre>
+                  <pre ref={lyricsContainerRef}>{lyrics}</pre>
                 </div>
               )}
               {initialState && !isLoading && !error && !lyrics && (
