@@ -46,10 +46,6 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // FIX: Corrected the malformed try-catch block.
-  // The original code had a syntax error that prematurely closed the component's function scope,
-  // causing all subsequent functions and hooks to be declared out of scope,
-  // which resulted in numerous "Cannot find name" errors.
   useEffect(() => {
     try {
       localStorage.setItem('lyrics-favorites', JSON.stringify(favorites));
@@ -126,11 +122,8 @@ const App: React.FC = () => {
     setCurrentLineIndex(-1);
 
     try {
-      // Vercel requires client-side env vars to be prefixed with VITE_
-      // This will check for the Vercel key, and fall back to the AI Studio key.
       const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
       if (!apiKey) {
-        // This case is handled by the main config error screen, but as a fallback.
         setIsConfigError(true);
         setIsLoading(false);
         return;
@@ -147,7 +140,6 @@ const App: React.FC = () => {
         },
       });
       
-      // FIX: Extract and display grounding sources, as required by guidelines.
       const groundingSources = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
       if (groundingSources) {
         setSources(groundingSources);
@@ -170,7 +162,14 @@ const App: React.FC = () => {
       console.error("Erro na busca da letra:", err);
       let detailedError = 'Ocorreu um erro ao buscar a letra. Por favor, tente novamente mais tarde.';
       if (err instanceof Error) {
-        detailedError = `${detailedError} (Detalhes: ${err.message})`;
+        // Check for specific, more helpful error messages
+        if (err.message.includes('API key not valid')) {
+            detailedError = 'Erro: A chave de API fornecida não é válida. Por favor, verifique se a copiou corretamente.';
+        } else if (err.message.includes('API has not been used') || err.message.includes('enable the API')) {
+            detailedError = 'Erro: A "Generative Language API" pode não estar ativada para este projeto. Por favor, ative-a no seu Google Cloud Console e tente novamente.';
+        } else {
+            detailedError = `${detailedError} (Detalhes: ${err.message})`;
+        }
       }
       setError(detailedError);
     } finally {
@@ -230,7 +229,7 @@ const App: React.FC = () => {
            <div className="config-error-container results-container">
             <h2>⚠️ Erro de Configuração</h2>
             <p>A chave de API do Google AI não foi encontrada.</p>
-            <p>Para que o aplicativo funcione na Vercel, você precisa configurar uma variável de ambiente:</p>
+            <p>Para que o aplicativo funcione na Vercel, você precisa configurar uma variável de ambiente. Se não vir um botão para "Criar em novo projeto" no AI Studio, selecione um projeto existente (como 'cmcm'), crie uma nova chave de API lá e use essa.</p>
             <div className="code-block">
                 <code>VITE_API_KEY</code>
             </div>
@@ -310,7 +309,6 @@ const App: React.FC = () => {
                       </p>
                     ))}
                   </div>
-                  {/* FIX: Display grounding sources */}
                   {sources && sources.length > 0 && (
                     <div className="sources-container">
                       <h4>Fontes</h4>
