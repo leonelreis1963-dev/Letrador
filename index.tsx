@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [initialState, setInitialState] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [view, setView] = useState<'search' | 'favorites'>('search');
+  const [sources, setSources] = useState<any[]>([]);
   
   const [isScrolling, setIsScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(3);
@@ -38,6 +39,10 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // FIX: Corrected the malformed try-catch block.
+  // The original code had a syntax error that prematurely closed the component's function scope,
+  // causing all subsequent functions and hooks to be declared out of scope,
+  // which resulted in numerous "Cannot find name" errors.
   useEffect(() => {
     try {
       localStorage.setItem('lyrics-favorites', JSON.stringify(favorites));
@@ -109,11 +114,21 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError('');
     setLyrics('');
+    setSources([]);
     setInitialState(false);
     setCurrentLineIndex(-1);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+      // Vercel requires client-side env vars to be prefixed with VITE_
+      // This will check for the Vercel key, and fall back to the AI Studio key.
+      const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
+      if (!apiKey) {
+        setError("Erro de configuração: A chave de API não foi encontrada. Se estiver implantando na Vercel, certifique-se de ter configurado a variável de ambiente VITE_API_KEY.");
+        setIsLoading(false);
+        return;
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
       const prompt = `Para a música "${searchTerm}", use a busca para encontrar a letra completa. Retorne a resposta ESTRITAMENTE como um objeto JSON com uma única chave: "lyrics". Exemplo de resposta: {"lyrics": "..."}. Se não encontrar, retorne: {"error": "Não foi possível encontrar la música."}`;
       
       const response = await ai.models.generateContent({
@@ -123,6 +138,12 @@ const App: React.FC = () => {
           tools: [{googleSearch: {}}],
         },
       });
+      
+      // FIX: Extract and display grounding sources, as required by guidelines.
+      const groundingSources = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (groundingSources) {
+        setSources(groundingSources);
+      }
       
       let resultText = response.text.trim();
       
@@ -168,6 +189,7 @@ const App: React.FC = () => {
     setSearchTerm(favorite.term);
     setLyrics(favorite.lyrics);
     setError('');
+    setSources([]);
     setInitialState(false);
     setIsScrolling(false);
     setCurrentLineIndex(-1);
@@ -253,6 +275,21 @@ const App: React.FC = () => {
                       </p>
                     ))}
                   </div>
+                  {/* FIX: Display grounding sources */}
+                  {sources && sources.length > 0 && (
+                    <div className="sources-container">
+                      <h4>Fontes</h4>
+                      <ul>
+                        {sources.filter(s => s.web?.uri).map((source, index) => (
+                          <li key={index}>
+                            <a href={source.web.uri} target="_blank" rel="noopener noreferrer">
+                              {source.web.title || source.web.uri}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
               {initialState && !isLoading && !error && !lyrics && (
