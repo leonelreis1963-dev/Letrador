@@ -413,6 +413,55 @@ input[type="range"]:hover::-moz-range-thumb {
   color: #fff;
 }
 
+.config-error-container {
+  text-align: center;
+  padding: 2rem 2.5rem;
+}
+
+.config-error-container h2 {
+  color: var(--error-color);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.config-error-container p {
+  margin-bottom: 1.2rem;
+  line-height: 1.7;
+  color: var(--text-color);
+}
+
+.code-block {
+  background-color: rgba(0,0,0,0.3);
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 1.5rem auto;
+  width: fit-content;
+  border: 1px solid var(--border-color);
+}
+
+.code-block code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  color: var(--favorite-color);
+}
+
+.info-link {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.info-link:hover {
+  background-color: var(--primary-hover-color);
+}
+
+
 @media (max-width: 600px) {
   header h1 {
     font-size: 2rem;

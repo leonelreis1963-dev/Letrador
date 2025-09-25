@@ -26,9 +26,16 @@ const App: React.FC = () => {
   const [scrollSpeed, setScrollSpeed] = useState(3);
   const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  const [isConfigError, setIsConfigError] = useState(false);
 
 
   useEffect(() => {
+    // Check for API key on initial load.
+    const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      setIsConfigError(true);
+    }
+
     try {
       const savedFavorites = localStorage.getItem('lyrics-favorites');
       if (savedFavorites) {
@@ -123,7 +130,8 @@ const App: React.FC = () => {
       // This will check for the Vercel key, and fall back to the AI Studio key.
       const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
       if (!apiKey) {
-        setError("Erro de configuração: A chave de API não foi encontrada. Se estiver implantando na Vercel, certifique-se de ter configurado a variável de ambiente VITE_API_KEY.");
+        // This case is handled by the main config error screen, but as a fallback.
+        setIsConfigError(true);
         setIsLoading(false);
         return;
       }
@@ -209,16 +217,34 @@ const App: React.FC = () => {
       <header>
         <h1>LETRADOR</h1>
         <nav className="navigation">
-          <button onClick={() => setView('search')} disabled={view === 'search'}>
+          <button onClick={() => setView('search')} disabled={view === 'search' || isConfigError}>
             Pesquisar
           </button>
-          <button onClick={() => setView('favorites')} disabled={view === 'favorites'}>
+          <button onClick={() => setView('favorites')} disabled={view === 'favorites' || isConfigError}>
             Favoritos ({favorites.length})
           </button>
         </nav>
       </header>
       <main>
-        {view === 'search' ? (
+        {isConfigError ? (
+           <div className="config-error-container results-container">
+            <h2>⚠️ Erro de Configuração</h2>
+            <p>A chave de API do Google AI não foi encontrada.</p>
+            <p>Para que o aplicativo funcione na Vercel, você precisa configurar uma variável de ambiente:</p>
+            <div className="code-block">
+                <code>VITE_API_KEY</code>
+            </div>
+            <p>Por favor, adicione esta variável nas configurações do seu projeto na Vercel com a sua chave de API como valor.</p>
+            <a 
+                href="https://vercel.com/docs/projects/environment-variables" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="info-link"
+            >
+                Aprenda a adicionar variáveis de ambiente na Vercel
+            </a>
+          </div>
+        ) : view === 'search' ? (
           <>
             <form onSubmit={handleSearch} className="search-form">
               <input
