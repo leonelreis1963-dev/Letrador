@@ -138,8 +138,12 @@ const App: React.FC = () => {
         setLyrics(result.lyrics);
       }
     } catch (err) {
-      console.error(err);
-      setError('Ocorreu um erro ao buscar a letra. Por favor, tente novamente mais tarde.');
+      console.error("Erro na busca da letra:", err);
+      let detailedError = 'Ocorreu um erro ao buscar a letra. Por favor, tente novamente mais tarde.';
+      if (err instanceof Error) {
+        detailedError = `${detailedError} (Detalhes: ${err.message})`;
+      }
+      setError(detailedError);
     } finally {
       setIsLoading(false);
     }
