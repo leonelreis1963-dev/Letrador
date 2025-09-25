@@ -214,7 +214,7 @@ const App: React.FC = () => {
   return (
     <div className="app-container">
       <header>
-        <h1>LETRADOR</h1>
+        <h1>LETRADOR ✨</h1>
         <nav className="navigation">
           <button onClick={() => setView('search')} disabled={view === 'search' || isConfigError}>
             Pesquisar
