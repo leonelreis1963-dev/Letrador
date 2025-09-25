@@ -22,8 +22,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<'search' | 'favorites'>('search');
   
   const [isScrolling, setIsScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(3); // Default speed
-  const lyricsContainerRef = useRef<HTMLPreElement>(null);
+  const [scrollSpeed, setScrollSpeed] = useState(3);
+  const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1);
+  const lyricsContainerRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     try {
@@ -48,16 +50,41 @@ const App: React.FC = () => {
     let scrollInterval: number | undefined;
 
     if (isScrolling && lyricsContainerRef.current) {
+      const el = lyricsContainerRef.current;
       scrollInterval = window.setInterval(() => {
-        if (lyricsContainerRef.current) {
-          const el = lyricsContainerRef.current;
-          if (el.scrollTop < el.scrollHeight - el.clientHeight) {
-            el.scrollTop += 1;
-          } else {
-            setIsScrolling(false); // Stop at the end
-          }
+        if (!lyricsContainerRef.current) return;
+
+        // Stop scrolling at the end
+        if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
+          setIsScrolling(false);
+          setCurrentLineIndex(-1);
+          return;
         }
-      }, 150 - scrollSpeed * 12); // Adjust timing based on speed
+
+        el.scrollTop += 1;
+
+        // Highlight logic
+        const activeZone = el.scrollTop + el.clientHeight / 4; // Highlight a bit higher up
+        const lines = Array.from(el.children) as HTMLElement[];
+        
+        let newCurrentIndex = lines.findIndex(line => line.offsetTop + line.offsetHeight > activeZone);
+        
+        // If findIndex returns -1 towards the end, highlight the last line.
+        if (newCurrentIndex === -1 && lines.length > 0) {
+            newCurrentIndex = lines.length - 1;
+        }
+
+        setCurrentLineIndex(prevIndex => {
+            if (newCurrentIndex !== -1 && newCurrentIndex !== prevIndex) {
+                return newCurrentIndex;
+            }
+            return prevIndex;
+        });
+
+      }, 150 - scrollSpeed * 12);
+    } else {
+        // When not scrolling, no line should be active
+        setCurrentLineIndex(-1);
     }
 
     return () => {
@@ -65,7 +92,7 @@ const App: React.FC = () => {
         clearInterval(scrollInterval);
       }
     };
-  }, [isScrolling, scrollSpeed]);
+  }, [isScrolling, scrollSpeed, lyrics]);
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -73,7 +100,7 @@ const App: React.FC = () => {
       setError('Por favor, digite o nome da música e do artista.');
       return;
     }
-
+    
     setIsScrolling(false);
     if(lyricsContainerRef.current) {
         lyricsContainerRef.current.scrollTop = 0;
@@ -83,11 +110,12 @@ const App: React.FC = () => {
     setError('');
     setLyrics('');
     setInitialState(false);
+    setCurrentLineIndex(-1);
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
-      const prompt = `Qual é a letra completa da música "${searchTerm}"? Retorne apenas a letra. Se não conseguir encontrar a letra, retorne a frase "LETRA_NAO_ENCONTRADA".`;
-
+      const prompt = `Para a música "${searchTerm}", use a busca para encontrar a letra completa. Retorne a resposta ESTRITAMENTE como um objeto JSON com uma única chave: "lyrics". Exemplo de resposta: {"lyrics": "..."}. Se não encontrar, retorne: {"error": "Não foi possível encontrar la música."}`;
+      
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
@@ -96,12 +124,18 @@ const App: React.FC = () => {
         },
       });
       
-      const generatedLyrics = response.text.trim();
+      let resultText = response.text.trim();
+      
+      if (resultText.startsWith('```json')) {
+        resultText = resultText.substring(7, resultText.length - 3).trim();
+      }
+      
+      const result = JSON.parse(resultText);
 
-      if (!generatedLyrics || generatedLyrics === 'LETRA_NAO_ENCONTRADA') {
-        setError(`Não foi possível encontrar a letra para "${searchTerm}". Por favor, verifique o nome da música e do artista e tente novamente.`);
+      if (result.error || !result.lyrics) {
+        setError(result.error || `Não foi possível encontrar a letra para "${searchTerm}". Por favor, verifique o nome e tente novamente.`);
       } else {
-        setLyrics(generatedLyrics);
+        setLyrics(result.lyrics);
       }
     } catch (err) {
       console.error(err);
@@ -132,23 +166,22 @@ const App: React.FC = () => {
     setError('');
     setInitialState(false);
     setIsScrolling(false);
+    setCurrentLineIndex(-1);
     if(lyricsContainerRef.current) {
         lyricsContainerRef.current.scrollTop = 0;
     }
     setView('search');
   };
 
-  const toggleScroll = () => {
+  const toggleKaraoke = () => {
     if (!lyrics) return;
     setIsScrolling(!isScrolling);
   };
-  
 
   return (
     <div className="app-container">
       <header>
         <h1>LETRADOR</h1>
-        <p>Encontre, ouça e salve as letras das suas músicas favoritas</p>
         <nav className="navigation">
           <button onClick={() => setView('search')} disabled={view === 'search'}>
             Pesquisar
@@ -187,26 +220,35 @@ const App: React.FC = () => {
                      <h2>{searchTerm}</h2>
                      <div className="controls-wrapper">
                         <div className="karaoke-controls">
-                           <button onClick={toggleScroll} className="play-pause-button" aria-label={isScrolling ? "Pausar rolagem" : "Iniciar rolagem"}>
-                             {isScrolling ? '⏸' : '▶'}
-                           </button>
-                           <label htmlFor="speed-slider">Velocidade</label>
-                           <input
-                             type="range"
-                             id="speed-slider"
-                             min="1"
-                             max="10"
-                             value={scrollSpeed}
-                             onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                             aria-label="Ajustar velocidade da rolagem"
-                           />
+                          <button onClick={toggleKaraoke} className="play-pause-button" aria-label={isScrolling ? "Pausar" : "Iniciar"} disabled={!lyrics}>
+                            {isScrolling ? '⏸' : '▶'}
+                          </button>
+                          <label htmlFor="speed-slider">Velocidade</label>
+                          <input
+                            type="range"
+                            id="speed-slider"
+                            min="1"
+                            max="10"
+                            value={scrollSpeed}
+                            onChange={(e) => setScrollSpeed(Number(e.target.value))}
+                            aria-label="Ajustar velocidade da rolagem"
+                          />
                         </div>
-                        <button onClick={toggleFavorite} className={`favorite-button ${isFavorite(searchTerm) ? 'favorited' : ''}`} aria-label="Adicionar aos favoritos">
+                        <button onClick={toggleFavorite} className={`favorite-button ${isFavorite(searchTerm) ? 'favorited' : ''}`} aria-label="Adicionar aos favoritos" disabled={!lyrics}>
                            {isFavorite(searchTerm) ? '★ Favorito' : '☆ Adicionar aos Favoritos'}
                         </button>
                      </div>
                   </div>
-                  <pre ref={lyricsContainerRef}>{lyrics}</pre>
+                  <div className="lyrics-text-container" ref={lyricsContainerRef}>
+                    {lyrics.split('\n').map((line, index) => (
+                      <p
+                        key={index}
+                        className={`lyrics-line ${index === currentLineIndex ? 'active' : ''}`}
+                      >
+                        {line || '\u00A0'}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               )}
               {initialState && !isLoading && !error && !lyrics && (

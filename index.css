@@ -49,14 +49,8 @@ header {
 header h1 {
   font-size: 2.5rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: #fff;
-}
-
-header p {
-  font-size: 1.1rem;
-  color: #a0a0c0;
   margin-bottom: 1.5rem;
+  color: #fff;
 }
 
 .navigation {
@@ -203,9 +197,16 @@ header p {
   transition: background-color 0.2s;
 }
 
-.play-pause-button:hover {
+.play-pause-button:hover:not(:disabled) {
   background-color: var(--primary-hover-color);
 }
+
+.play-pause-button:disabled {
+  background-color: #5d3d6b;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 
 input[type="range"] {
   -webkit-appearance: none;
@@ -259,7 +260,7 @@ input[type="range"]:hover::-moz-range-thumb {
   white-space: nowrap;
 }
 
-.favorite-button:hover {
+.favorite-button:hover:not(:disabled) {
   border-color: var(--favorite-color);
   color: var(--favorite-color);
 }
@@ -270,32 +271,50 @@ input[type="range"]:hover::-moz-range-thumb {
   color: #121225;
 }
 
-.lyrics-display pre {
-  font-family: inherit;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 1.1rem;
-  line-height: 1.8;
-  color: var(--text-color);
+.favorite-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.lyrics-text-container {
   max-height: 60vh;
   overflow-y: auto;
   scroll-behavior: smooth;
   padding-right: 10px; /* Avoid content hiding behind scrollbar */
 }
 
+.lyrics-line {
+  font-family: inherit;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  transition: color 0.3s ease, transform 0.3s ease, font-weight 0.3s ease;
+  transform-origin: left center;
+}
+
+.lyrics-line.active {
+  color: var(--favorite-color);
+  font-weight: 700;
+  transform: scale(1.02);
+}
+
 /* Custom Scrollbar */
-.lyrics-display pre::-webkit-scrollbar {
+.lyrics-text-container::-webkit-scrollbar {
   width: 8px;
 }
-.lyrics-display pre::-webkit-scrollbar-track {
+.lyrics-text-container::-webkit-scrollbar-track {
   background: rgba(0,0,0,0.2);
   border-radius: 4px;
 }
-.lyrics-display pre::-webkit-scrollbar-thumb {
+.lyrics-text-container::-webkit-scrollbar-thumb {
   background-color: var(--primary-color);
   border-radius: 4px;
 }
-.lyrics-display pre::-webkit-scrollbar-thumb:hover {
+.lyrics-text-container::-webkit-scrollbar-thumb:hover {
   background-color: var(--primary-hover-color);
 }
 
@@ -394,7 +413,6 @@ input[type="range"]:hover::-moz-range-thumb {
   color: #fff;
 }
 
-
 @media (max-width: 600px) {
   header h1 {
     font-size: 2rem;
@@ -420,8 +438,10 @@ input[type="range"]:hover::-moz-range-thumb {
   }
   .karaoke-controls {
     justify-content: space-between;
+    width: 100%;
   }
   .favorite-button {
     text-align: center;
+    width: 100%;
   }
 }
