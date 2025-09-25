@@ -445,6 +445,46 @@ input[type="range"]:hover::-moz-range-thumb {
   color: var(--favorite-color);
 }
 
+.diagnostic-info {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.diagnostic-info h4 {
+  margin-bottom: 1rem;
+  text-align: center;
+  color: #fff;
+}
+
+.diagnostic-info p {
+  font-size: 0.9rem;
+  color: #a0a0c0;
+  margin-bottom: 1rem;
+}
+
+.diagnostic-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.diagnostic-info li {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.diagnostic-info code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: rgba(0,0,0,0.3);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+
 .info-link {
   display: inline-block;
   margin-top: 1rem;

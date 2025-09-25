@@ -234,7 +234,16 @@ const App: React.FC = () => {
             <div className="code-block">
                 <code>VITE_API_KEY</code>
             </div>
-            <p>Por favor, adicione esta variável nas configurações do seu projeto na Vercel com a sua chave de API como valor.</p>
+            
+            <div className="diagnostic-info">
+              <h4>Informação de Diagnóstico</h4>
+              <p>Esta seção mostra as variáveis que o aplicativo consegue ver. Para funcionar na Vercel, o status da <code>VITE_API_KEY</code> deve ser "Encontrada".</p>
+              <ul>
+                <li>Status de <code>VITE_API_KEY</code>: <strong>{process.env.VITE_API_KEY ? '✅ Encontrada' : '❌ Não encontrada'}</strong></li>
+                <li>Status de <code>API_KEY</code>: <strong>{process.env.API_KEY ? '✅ Encontrada' : '❌ Não encontrada'}</strong></li>
+              </ul>
+            </div>
+            
             <a 
                 href="https://vercel.com/docs/projects/environment-variables" 
                 target="_blank" 
