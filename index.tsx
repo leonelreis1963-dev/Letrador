@@ -28,8 +28,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check for API key on initial load.
-    const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
-    if (!apiKey) {
+    if (!process.env.API_KEY) {
       setIsConfigError(true);
     }
 
@@ -81,14 +80,13 @@ const App: React.FC = () => {
     setInitialState(false);
 
     try {
-      const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
-      if (!apiKey) {
+      if (!process.env.API_KEY) {
         setIsConfigError(true);
         setIsLoading(false);
         return;
       }
 
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Sua tarefa é encontrar a letra OFICIAL e EXATA para a música "${searchTerm}". Use a busca do Google para encontrar a letra em fontes confiáveis como sites de letras de música conhecidos (ex: Letras.mus.br, Genius, Vagalume) ou sites oficiais de artistas. NÃO invente, resuma ou modifique a letra. A letra deve ser completa e formatada corretamente com quebras de linha. Retorne a resposta ESTRITAMENTE como um objeto JSON com a chave "lyrics" contendo a letra completa. Se não tiver certeza ou não conseguir encontrar a letra exata, retorne: {"error": "Não foi possível encontrar a letra exata para esta música. Verifique o nome e tente novamente."}`;
       
       const response = await ai.models.generateContent({
@@ -178,31 +176,20 @@ const App: React.FC = () => {
       </header>
       <main>
         {isConfigError ? (
-           <div className="config-error-container results-container">
+          <div className="config-error-container results-container">
             <h2>⚠️ Erro de Configuração</h2>
-            <p>A chave de API do Google AI não foi encontrada.</p>
-            <p>Para que o aplicativo funcione na Vercel, você precisa configurar uma variável de ambiente. Se não vir um botão para "Criar em novo projeto" no AI Studio, selecione um projeto existente (como 'cmcm'), crie uma nova chave de API lá e use essa.</p>
-            <div className="code-block">
-                <code>VITE_API_KEY</code>
-            </div>
+            <p>A chave de API (API Key) do Google AI não foi encontrada.</p>
+            <p>Para que o aplicativo funcione, a variável de ambiente <code>API_KEY</code> precisa estar configurada corretamente no ambiente de execução.</p>
             
             <div className="diagnostic-info">
               <h4>Informação de Diagnóstico</h4>
-              <p>Esta seção mostra as variáveis que o aplicativo consegue ver. Para funcionar na Vercel, o status da <code>VITE_API_KEY</code> deve ser "Encontrada".</p>
+              <p>Esta seção mostra o status da variável que o aplicativo está procurando.</p>
               <ul>
-                <li>Status de <code>VITE_API_KEY</code>: <strong>{process.env.VITE_API_KEY ? '✅ Encontrada' : '❌ Não encontrada'}</strong></li>
                 <li>Status de <code>API_KEY</code>: <strong>{process.env.API_KEY ? '✅ Encontrada' : '❌ Não encontrada'}</strong></li>
               </ul>
             </div>
             
-            <a 
-                href="https://vercel.com/docs/projects/environment-variables" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="info-link"
-            >
-                Aprenda a adicionar variáveis de ambiente na Vercel
-            </a>
+            <p>Por favor, certifique-se de que sua chave de API do Google AI foi adicionada como uma variável de ambiente chamada <code>API_KEY</code>.</p>
           </div>
         ) : view === 'search' ? (
           <>
