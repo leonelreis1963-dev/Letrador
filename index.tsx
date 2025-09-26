@@ -178,18 +178,21 @@ const App: React.FC = () => {
         {isConfigError ? (
           <div className="config-error-container results-container">
             <h2>⚠️ Erro de Configuração</h2>
-            <p>A chave de API (API Key) do Google AI não foi encontrada.</p>
-            <p>Para que o aplicativo funcione, a variável de ambiente <code>API_KEY</code> precisa estar configurada corretamente no ambiente de execução.</p>
+            <p>A chave de API (API Key) do Google AI não foi encontrada neste ambiente.</p>
+            <p>
+              <strong>Nesta plataforma, a chave de API é gerenciada e injetada automaticamente.</strong> Você não precisa configurá-la manualmente no código.
+            </p>
+            <p>
+              Se este erro persistir, pode ser um problema temporário na plataforma. Tente recarregar a página ou verifique a configuração de API Key no seu projeto do Google AI Studio.
+            </p>
             
             <div className="diagnostic-info">
               <h4>Informação de Diagnóstico</h4>
-              <p>Esta seção mostra o status da variável que o aplicativo está procurando.</p>
+              <p>Status da variável que o aplicativo está procurando:</p>
               <ul>
                 <li>Status de <code>API_KEY</code>: <strong>{process.env.API_KEY ? '✅ Encontrada' : '❌ Não encontrada'}</strong></li>
               </ul>
             </div>
-            
-            <p>Por favor, certifique-se de que sua chave de API do Google AI foi adicionada como uma variável de ambiente chamada <code>API_KEY</code>.</p>
           </div>
         ) : view === 'search' ? (
           <>
