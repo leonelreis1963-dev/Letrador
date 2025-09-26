@@ -147,7 +147,7 @@ header h1 {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   gap: 1rem;
 }
 
@@ -162,89 +162,10 @@ header h1 {
 
 .controls-wrapper {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
   gap: 1rem;
-}
-
-.karaoke-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background-color: rgba(0,0,0,0.2);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-}
-
-.karaoke-controls label {
-  font-size: 0.9rem;
-  color: #a0a0c0;
-}
-
-.play-pause-button {
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.play-pause-button:hover:not(:disabled) {
-  background-color: var(--primary-hover-color);
-}
-
-.play-pause-button:disabled {
-  background-color: #5d3d6b;
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 80px;
-  height: 5px;
-  background: var(--border-color);
-  border-radius: 5px;
-  outline: none;
-  cursor: pointer;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 15px;
-  height: 15px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  background: var(--primary-color);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.2s;
-}
-
-input[type="range"]:hover::-webkit-slider-thumb {
-  background: var(--primary-hover-color);
-}
-input[type="range"]:hover::-moz-range-thumb {
-  background: var(--primary-hover-color);
 }
 
 .favorite-button {
@@ -294,12 +215,6 @@ input[type="range"]:hover::-moz-range-thumb {
   padding: 0;
   transition: color 0.3s ease, transform 0.3s ease, font-weight 0.3s ease;
   transform-origin: left center;
-}
-
-.lyrics-line.active {
-  color: var(--favorite-color);
-  font-weight: 700;
-  transform: scale(1.02);
 }
 
 /* Custom Scrollbar */

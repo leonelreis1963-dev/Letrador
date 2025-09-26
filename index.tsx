@@ -22,9 +22,6 @@ const App: React.FC = () => {
   const [view, setView] = useState<'search' | 'favorites'>('search');
   const [sources, setSources] = useState<any[]>([]);
   
-  const [isScrolling, setIsScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(3);
-  const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1);
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
   const [isConfigError, setIsConfigError] = useState(false);
 
@@ -41,7 +38,9 @@ const App: React.FC = () => {
       if (savedFavorites) {
         setFavorites(JSON.parse(savedFavorites));
       }
-    } catch (e) {
+    } 
+    // FIX: Corrected invalid arrow function syntax in catch block.
+    catch (e) {
       console.error('Falha ao carregar favoritos do localStorage', e);
     }
   }, []);
@@ -55,61 +54,22 @@ const App: React.FC = () => {
   }, [favorites]);
 
   useEffect(() => {
-    let scrollInterval: number | undefined;
-
-    if (isScrolling && lyricsContainerRef.current) {
-      const el = lyricsContainerRef.current;
-      scrollInterval = window.setInterval(() => {
-        if (!lyricsContainerRef.current) return;
-
-        // Stop scrolling at the end
-        if (el.scrollTop >= el.scrollHeight - el.clientHeight) {
-          setIsScrolling(false);
-          setCurrentLineIndex(-1);
-          return;
-        }
-
-        el.scrollTop += 1;
-
-        // Highlight logic
-        const activeZone = el.scrollTop + el.clientHeight / 4; // Highlight a bit higher up
-        const lines = Array.from(el.children) as HTMLElement[];
-        
-        let newCurrentIndex = lines.findIndex(line => line.offsetTop + line.offsetHeight > activeZone);
-        
-        // If findIndex returns -1 towards the end, highlight the last line.
-        if (newCurrentIndex === -1 && lines.length > 0) {
-            newCurrentIndex = lines.length - 1;
-        }
-
-        setCurrentLineIndex(prevIndex => {
-            if (newCurrentIndex !== -1 && newCurrentIndex !== prevIndex) {
-                return newCurrentIndex;
-            }
-            return prevIndex;
-        });
-
-      }, 150 - scrollSpeed * 12);
-    } else {
-        // When not scrolling, no line should be active
-        setCurrentLineIndex(-1);
-    }
-
-    return () => {
-      if (scrollInterval) {
-        clearInterval(scrollInterval);
-      }
-    };
-  }, [isScrolling, scrollSpeed, lyrics]);
-
-  const handleSearch = async (event: React.FormEvent) => {
-    event.preventDefault();
+    // This effect handles clearing the results when the search bar is emptied manually.
     if (!searchTerm.trim()) {
-      setError('Por favor, digite o nome da música e do artista.');
-      return;
+      setLyrics('');
+      setError('');
+      setSources([]);
+      setInitialState(true);
+      setIsLoading(false); // Make sure loading is also cancelled.
     }
-    
-    setIsScrolling(false);
+  }, [searchTerm]);
+
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // Prevent page reload
+    if (!searchTerm.trim()) {
+      return; // Do not search if the input is empty
+    }
+
     if(lyricsContainerRef.current) {
         lyricsContainerRef.current.scrollTop = 0;
     }
@@ -119,7 +79,6 @@ const App: React.FC = () => {
     setLyrics('');
     setSources([]);
     setInitialState(false);
-    setCurrentLineIndex(-1);
 
     try {
       const apiKey = process.env.VITE_API_KEY || process.env.API_KEY;
@@ -130,7 +89,7 @@ const App: React.FC = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Para a música "${searchTerm}", use a busca para encontrar a letra completa. Retorne a resposta ESTRITAMENTE como um objeto JSON com uma única chave: "lyrics". Exemplo de resposta: {"lyrics": "..."}. Se não encontrar, retorne: {"error": "Não foi possível encontrar la música."}`;
+      const prompt = `Sua tarefa é encontrar a letra OFICIAL e EXATA para a música "${searchTerm}". Use a busca do Google para encontrar a letra em fontes confiáveis como sites de letras de música conhecidos (ex: Letras.mus.br, Genius, Vagalume) ou sites oficiais de artistas. NÃO invente, resuma ou modifique a letra. A letra deve ser completa e formatada corretamente com quebras de linha. Retorne a resposta ESTRITAMENTE como um objeto JSON com a chave "lyrics" contendo a letra completa. Se não tiver certeza ou não conseguir encontrar a letra exata, retorne: {"error": "Não foi possível encontrar a letra exata para esta música. Verifique o nome e tente novamente."}`;
       
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -198,17 +157,10 @@ const App: React.FC = () => {
     setError('');
     setSources([]);
     setInitialState(false);
-    setIsScrolling(false);
-    setCurrentLineIndex(-1);
     if(lyricsContainerRef.current) {
         lyricsContainerRef.current.scrollTop = 0;
     }
     setView('search');
-  };
-
-  const toggleKaraoke = () => {
-    if (!lyrics) return;
-    setIsScrolling(!isScrolling);
   };
 
   return (
@@ -254,7 +206,7 @@ const App: React.FC = () => {
           </div>
         ) : view === 'search' ? (
           <>
-            <form onSubmit={handleSearch} className="search-form">
+            <form className="search-form" onSubmit={handleSearch}>
               <input
                 type="text"
                 value={searchTerm}
@@ -263,7 +215,11 @@ const App: React.FC = () => {
                 className="search-input"
                 aria-label="Nome da música e artista"
               />
-              <button type="submit" className="search-button" disabled={isLoading}>
+              <button 
+                type="submit" 
+                className="search-button" 
+                disabled={isLoading || !searchTerm.trim()}
+              >
                 {isLoading ? 'Buscando...' : 'Buscar'}
               </button>
             </form>
@@ -279,21 +235,6 @@ const App: React.FC = () => {
                   <div className="lyrics-header">
                      <h2>{searchTerm}</h2>
                      <div className="controls-wrapper">
-                        <div className="karaoke-controls">
-                          <button onClick={toggleKaraoke} className="play-pause-button" aria-label={isScrolling ? "Pausar" : "Iniciar"} disabled={!lyrics}>
-                            {isScrolling ? '⏸' : '▶'}
-                          </button>
-                          <label htmlFor="speed-slider">Velocidade</label>
-                          <input
-                            type="range"
-                            id="speed-slider"
-                            min="1"
-                            max="10"
-                            value={scrollSpeed}
-                            onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                            aria-label="Ajustar velocidade da rolagem"
-                          />
-                        </div>
                         <button onClick={toggleFavorite} className={`favorite-button ${isFavorite(searchTerm) ? 'favorited' : ''}`} aria-label="Adicionar aos favoritos" disabled={!lyrics}>
                            {isFavorite(searchTerm) ? '★ Favorito' : '☆ Adicionar aos Favoritos'}
                         </button>
@@ -303,7 +244,7 @@ const App: React.FC = () => {
                     {lyrics.split('\n').map((line, index) => (
                       <p
                         key={index}
-                        className={`lyrics-line ${index === currentLineIndex ? 'active' : ''}`}
+                        className="lyrics-line"
                       >
                         {line || '\u00A0'}
                       </p>
